@@ -1,6 +1,8 @@
-# RVM (Ruby Version Manager)
+#Ruby Notes 
 
-###Installing RVM
+##RVM (Ruby Version Manager)
+
+####Installing RVM
 Refer to [RVM install](https://rvm.io/rvm/install)
 
 * Installing the stable release of RVM
@@ -23,7 +25,7 @@ Single-User Install Location: ~/.rvm/
 
 ```$ rvm get stable```
 
-###RVM Commands
+####RVM Commands
 * List Ruby interpreters available for installation.
 
 ```$ rvm list known```
@@ -132,7 +134,7 @@ every time you install a new gem, it will install without documentation.
 ***NOTE:*** You cannot share gems between ruby-versions
 
 
-###Gemsets
+####Gemsets
 
 A Gemset is a container you can use to keep gems separate from each other.
 The idea is to create a gemset per project to allow changing gems (amd gem versions) for
@@ -190,7 +192,7 @@ It is however possible to override this behavior by either using ***after_instal
 overriding with ***--with-default-gems/--with-gems*** flags during install / upgrade.
 
 
-###Creating Gemsets
+####Creating Gemsets
 
 Gemsets must be created before being used. 
 To create a new gemset for the current ruby, do this:
@@ -224,7 +226,6 @@ your ```~/.rvmrc``` or ```/etc/rvmrc``` file:
 $ rvm_gemset_create_on_use_flag=1
 ```
 
----
 
 With the latest RVM version (1.17.0 and newer) just type:
 
@@ -272,3 +273,107 @@ $ rvm @global do gem install ...
 ###Resources
 - [RVM](https://rvm.io/)
 - [RVM Gemsets](https://rvm.io/gemsets/)
+
+---
+
+##RubyGems
+
+RubyGems now allows you to set the path to where your (and the systems) gems are installed 
+using a System Wide Config File: ```/etc/gemrc```. 
+This is really useful to those packaging RubyGems for different operating systems as it 
+avoids nasty hacks or coercing the ```$GEM_PATH``` to a specific value every time RubyGems 
+are run. The format of the file is like this:
+
+```
+gem: --no-rdoc --no-ri
+gemhome: /var/ruby/1.8/gem_home
+gempath:
+ - /usr/ruby/1.8/lib/ruby/gems/1.8
+```
+
+Here it's specified that by default rdoc and ri should not be built when installing gems 
+and the ```gemhome``` and ```gempath``` configuration variables are set. 
+With the ```/etc/gemrc``` set as above `gem environment` gives this output:
+
+```
+RubyGems Environment:
+  - RUBYGEMS VERSION: 1.2.0
+  - RUBY VERSION: 1.8.6 (2007-09-23 patchlevel 110) [i386-solaris2.11]
+  - INSTALLATION DIRECTORY: /var/ruby/1.8/gem_home
+  - RUBY EXECUTABLE: /usr/ruby/1.8/bin/ruby
+  - EXECUTABLE DIRECTORY: /var/ruby/1.8/gem_home/bin
+  - RUBYGEMS PLATFORMS:
+    - ruby
+    - x86-solaris-2.11
+  - GEM PATHS:
+     - /var/ruby/1.8/gem_home
+     - /usr/ruby/1.8/ruby/lib/gems/1.8
+  - GEM CONFIGURATION:
+     - :update_sources => true
+     - :verbose => true
+     - :benchmark => false
+     - :backtrace => false
+     - :bulk_threshold => 1000
+     - "gemhome" => "/var/ruby/1.8/gem_home"
+     - "gempath" => ["/usr/ruby/1.8/ruby/lib/gems/1.8"]
+  - REMOTE SOURCES:
+     - http://gems.rubyforge.org/
+```
+
+The actual values from ```/etc/gemrc``` are printed out in the "GEM CONFIGURATION" section, 
+but they have actually had an affect on the "INSTALLATION DIRECTORY" 
+(where gems are installed to), "EXECUTABLE DIRECTORY" 
+(where gem binaries such as rails are installed to) and "GEM PATHS" which is the paths 
+that the gem command will use to locate gems. 
+This comes into effect when you run commands like
+```$ gem environment``` 
+```$ gem query```
+```$ gem list --local``` 
+and most importantly when checking for dependencies when installing new gems.
+
+Now the downside, the values for ```gempath``` and ```gemhome``` really are only used when 
+running the gem command. 
+They do not come into play when actually using a ruby gem. 
+An example: As part of as system setup, the Ruby on Rails 2.1.0 gem is installed to 
+```/usr/ruby/1.8/lib/ruby/gems/1.8``` using the ***--install-dir*** switch with 
+```$ gem install```. 
+Then the Ruby on Rails 2.0.2 gem is installed to the default Gem Home 
+(/var/ruby/1.8/gem_home). The 'rails' binaries installed by each are just wrapper scripts 
+that call out to the rails gem, but the rails command does allow you to specify the version 
+of Ruby on Rails that you want to use with the following syntax:
+
+rails _2.0.2_ my_test_app
+With "_2.0.2_" being the version that you want to use. If you run this with the setup as 
+described above, where rails 2.1.0 is installed in one directory and rails 2.0.2 is 
+installed in another and where you have only set the Gem Path through 
+```/etc/gemrc``` the following happens:
+
+```
+grond% rails _2.0.2_ my_test_app
+ /usr/ruby/1.8/lib/ruby/site_ruby/1.8/rubygems.rb:580:in `report_activate_error': RubyGem version error: rails(2.1.0 not = 2.0.2) (Gem::LoadError)
+        from /usr/ruby/1.8/lib/ruby/site_ruby/1.8/rubygems.rb:134:in `activate'
+        from /usr/ruby/1.8/lib/ruby/site_ruby/1.8/rubygems.rb:49:in `gem'
+        from /var/ruby/1.8/gem_home/bin/rails:18
+```
+This shows that it could not find the Ruby on Rails 2.0. gem anywhere on the path it was 
+using to locate gems. 
+The path it used was the default path constructed from the various paths in the Ruby 
+config file: rbconfig.rb and as Ruby is installed to 
+/usr/ruby/1.8 this is /usr/ruby/1.8/lib/ruby/gems/1.8 on OpenSolaris.
+
+The fix is to use the GEM_PATH environment variable, if this is set, then the paths 
+that it specifies will be included for any usage of Ruby Gems, be it the using 
+the 'gem' command or actually running the gems themselves.
+
+When running the gem command a Gem::ConfigFile instance is create and it is this that 
+actually reads and parses the /etc/gemrc file. 
+The gemhome and gempath values are extracted from the ConfigFile instance by 
+Gem::GemRunner which is the base class for running 'gem' commands, these values are then 
+pushed into the Gem.path class variable which is used throughout RubyGems. 
+However, when running or loading a gem, the only setting of the Gem.path is done by 
+checking to see if GEM_PATH is set, if it is then it's values are used, if it isn't 
+then the default path is used.
+
+I can only suppose that this was done deliberately but I can't at the moment see 
+why that would be. It seems to make sense that GEM_PATH and gempath (in /etc/gemrc) 
+would do the same thing.
