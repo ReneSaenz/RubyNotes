@@ -1,6 +1,6 @@
-# RubyNotes
+# RVM (Ruby Version Manager)
 
-###Installing Ruby with RVM
+###Installing RVM
 Refer to [RVM install](https://rvm.io/rvm/install)
 
 * Installing the stable release of RVM
@@ -124,6 +124,13 @@ $ rvm 2.0.0
 $ rvm gemset import system
 ```
 
+***NOTE:*** To avoid installing the documentation of every gem you install, create a file 
+called ```/etc/gemrc``` with this content ```gem: --no-document```  From that point on,
+every time you install a new gem, it will install without documentation.
+
+
+***NOTE:*** You cannot share gems between ruby-versions
+
 
 ###Gemsets
 
@@ -141,8 +148,8 @@ it also uses a set of user-editable files to determine which gems to install.
 
 When working in ```~/.rvm/gemsets``` 
 
-rvm searchs for global.gems and default.gems using a tree-hierachy based on the ruby string 
-being installed. 
+rvm searches for global.gems and default.gems using a tree-hierachy based on the 
+ruby string being installed. 
 Using the example of ree-1.8.7-p2010.02, rvm will check (and import from) the following files:
 
 ```
@@ -172,6 +179,9 @@ awesome_print
 hirb -v0.4.5
 ```
 
+In short: edit a file called ~/.rvm/gemsets/global.gems to contain the list of gems you 
+want to be there for each ruby-version.
+
 ***Warning***
 
 default.gems and global.gems files are usually overwritten during update of rvm (rvm get ...).
@@ -179,5 +189,86 @@ default.gems and global.gems files are usually overwritten during update of rvm 
 It is however possible to override this behavior by either using ***after_install*** hook or 
 overriding with ***--with-default-gems/--with-gems*** flags during install / upgrade.
 
-___
-create a file called ```/etc/gemrc``` with this content ```gem: --no-document```
+
+###Creating Gemsets
+
+Gemsets must be created before being used. 
+To create a new gemset for the current ruby, do this:
+
+```
+$ rvm 2.1.1
+$ rvm gemset create teddy
+Gemset 'teddy' created.
+```
+
+You can also create multiple gemsets in a single command.
+
+```
+$ rvm 2.1.1
+$ rvm gemset create teddy rosie
+Gemset 'teddy' created.
+Gemset 'rosie' created.
+```
+
+Alternatively, if you prefer the shorthand syntax offered by rvm use, 
+employ the --create option like so:
+
+```
+$ rvm use 2.1.1@teddy --create
+```
+
+If you would like to create gemsets automatically when used, export this flag in 
+your ```~/.rvmrc``` or ```/etc/rvmrc``` file:
+
+```
+$ rvm_gemset_create_on_use_flag=1
+```
+
+---
+
+With the latest RVM version (1.17.0 and newer) just type:
+
+```
+$ rvm @global do gem install passenger
+```
+
+or
+
+```
+$ rvm use <ruby version>@global --create
+```
+
+or
+
+```
+$ rvm 1.9.3@global do gem install passenger 
+```
+
+if you need it only for a specific version of ruby.
+
+Install gems you want to share between gemsets:
+
+```
+$ bundle install <gem name>
+```
+
+but these gems can only be shared between gemsets of the ***same ruby version***.
+
+
+####Interpreter global gemsets
+
+RVM provides (>= 0.1.8) a @global gemset per ruby interpreter.
+
+Gems you install to the ```@global``` gemset for a given ruby are available to all 
+other gemsets you create in association with that ruby.
+
+This is a good way to allow all of your projects to share the same installed gem for 
+a specific ruby interpreter installation.
+
+To install a gem in the global gemset
+```
+$ rvm @global do gem install ...
+```
+###Resources
+- [RVM](https://rvm.io/)
+- [RVM Gemsets](https://rvm.io/gemsets/)
