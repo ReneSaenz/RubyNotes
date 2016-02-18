@@ -125,3 +125,59 @@ $ rvm gemset import system
 ```
 
 
+###Gemsets
+
+A Gemset is a container you can use to keep gems separate from each other.
+The idea is to create a gemset per project to allow changing gems (amd gem versions) for
+one project without breaking all of your other projects.
+Eash project need only worry about its own gems. This is a good idea and the wait time
+for installing large gems like rails is usually worth it.
+
+When you install a new ruby, RVM will create 2 gemsets
+- default gemset (empty)
+- global gemset
+
+it also uses a set of user-editable files to determine which gems to install.
+
+When working in ```~/.rvm/gemsets``` 
+
+rvm searchs for global.gems and default.gems using a tree-hierachy based on the ruby string 
+being installed. 
+Using the example of ree-1.8.7-p2010.02, rvm will check (and import from) the following files:
+
+```
+- ~/.rvm/gemsets/ree/1.8.7/p2010.02/global.gems
+- ~/.rvm/gemsets/ree/1.8.7/p2010.02/default.gems
+- ~/.rvm/gemsets/ree/1.8.7/global.gems
+- ~/.rvm/gemsets/ree/1.8.7/default.gems
+- ~/.rvm/gemsets/ree/global.gems
+- ~/.rvm/gemsets/ree/default.gems
+- ~/.rvm/gemsets/global.gems
+- ~/.rvm/gemsets/default.gems
+```
+
+For example, if you edited ```~/.rvm/gemsets/global.gems``` by adding these two lines:
+
+```
+bundler
+awesome_print
+```
+every time you install a new ruby, these two gems are installed into your global gemset.
+Using the default or global gemsets, you can also make RVM include a specific version of 
+a given gem. Here's how:
+
+```
+bundler -v~>1.0.0
+awesome_print
+hirb -v0.4.5
+```
+
+***Warning***
+
+default.gems and global.gems files are usually overwritten during update of rvm (rvm get ...).
+
+It is however possible to override this behavior by either using ***after_install*** hook or 
+overriding with ***--with-default-gems/--with-gems*** flags during install / upgrade.
+
+___
+create a file called ```/etc/gemrc``` with this content ```gem: --no-document```
